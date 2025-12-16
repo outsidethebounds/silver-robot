@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, sans-serif;
+  background: radial-gradient(circle at top left, #e0f0e7, #f5f5f5 40%, #dbeafe 90%);
+  color: #020617;
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
