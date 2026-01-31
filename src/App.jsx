@@ -5,10 +5,13 @@ import { loadItems, saveItems, calculateDiscountedPrice, formatCurrency } from '
 import TopNav from './components/TopNav.jsx';
 import CatalogView from './components/CatalogView.jsx';
 import ManageView from './components/ManageView.jsx';
+import ProductDetailPanel from './components/ProductDetailPanel.jsx';
 
 function App() {
   const [items, setItems] = useState([]);
   const [mode, setMode] = useState('catalog');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     setItems(loadItems());
@@ -23,7 +26,9 @@ function App() {
   };
 
   const handleUpdateItem = (updatedItem) => {
-    setItems((prev) => prev.map((it) => (it.id === updatedItem.id ? updatedItem : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
+    );
   };
 
   const handleDeleteMany = (ids) => {
@@ -35,37 +40,34 @@ function App() {
     setItems((prev) => [...newItems, ...prev]);
   };
 
-  const safeSetMode = (nextMode) => {
-    // If TopNav still has a "Table" button, treat it as Manage Inventory
-    if (nextMode === 'table') setMode('manage');
-    else setMode(nextMode);
-  };
+  const editingItem = items.find((it) => it.id === editingId) || null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-forest-50 via-slate-50 to-emerald-100 text-slate-900">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <header className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-forest-700 text-white shadow-md">
+          <div className="w-11 h-11 rounded-xl bg-forest-700 text-white flex items-center justify-center shadow-md">
             <Mountain className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Blake&apos;s Clothes</h1>
-            <p className="text-sm text-slate-600">Outdoor &amp; active wardrobe inventory</p>
+            <h1 className="text-2xl font-semibold">Blake&apos;s Clothes</h1>
+            <p className="text-sm text-slate-600">Outdoor wardrobe inventory</p>
           </div>
         </header>
 
-        <TopNav mode={mode} onChangeMode={safeSetMode} />
+        <TopNav mode={mode} onChangeMode={setMode} />
 
         <main className="mt-6">
           {mode === 'catalog' && (
             <CatalogView
               items={items}
+              onSelectItem={(item) => setSelectedItem(item)}
               calculateDiscountedPrice={calculateDiscountedPrice}
               formatCurrency={formatCurrency}
             />
           )}
 
-          {(mode === 'manage' || mode === 'table') && (
+          {mode === 'manage' && (
             <ManageView
               items={items}
               categories={CATEGORIES}
@@ -75,10 +77,22 @@ function App() {
               onUpdateItem={handleUpdateItem}
               onDeleteItems={handleDeleteMany}
               onImportItems={handleImportItems}
+              editingItem={editingItem}
             />
           )}
         </main>
       </div>
+
+      {/* Slide-over details */}
+      <ProductDetailPanel
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onEdit={(item) => {
+          setSelectedItem(null);
+          setEditingId(item.id);
+          setMode('manage');
+        }}
+      />
     </div>
   );
 }
