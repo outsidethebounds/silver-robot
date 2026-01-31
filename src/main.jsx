@@ -120,3 +120,12 @@ function App() {
               <td>{item.name}</td>
               <td>{item.quantity}</td>
               <td>${item.price.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
