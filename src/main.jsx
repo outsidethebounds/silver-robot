@@ -1,111 +1,122 @@
-let inventory = [];
-let hasUnsavedChanges = false;
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom/client";
 
-const tableBody = document.getElementById("inventoryTable");
-const form = document.getElementById("inventoryForm");
+function App() {
+  const [inventory, setInventory] = useState([]);
+  const [dirty, setDirty] = useState(false);
 
-const importBtn = document.getElementById("importBtn");
-const exportBtn = document.getElementById("exportBtn");
-const importFile = document.getElementById("importFile");
+  // Warn before refresh if not exported
+  useEffect(() => {
+    const handler = (e) => {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
-// --------------------
-// Render Inventory
-// --------------------
-function renderInventory() {
-  tableBody.innerHTML = "";
+  const addItem = (e) => {
+    e.preventDefault();
 
-  inventory.forEach(item => {
-    const row = document.createElement("tr");
+    const form = e.target;
+    const item = {
+      sku: form.sku.value.trim(),
+      name: form.name.value.trim(),
+      quantity: Number(form.quantity.value),
+      price: Number(form.price.value),
+    };
 
-    row.innerHTML = `
-      <td>${item.sku}</td>
-      <td>${item.name}</td>
-      <td>${item.quantity}</td>
-      <td>$${item.price.toFixed(2)}</td>
-    `;
-
-    tableBody.appendChild(row);
-  });
-}
-
-// --------------------
-// Add Inventory Item
-// --------------------
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const item = {
-    sku: document.getElementById("sku").value.trim(),
-    name: document.getElementById("name").value.trim(),
-    quantity: Number(document.getElementById("quantity").value),
-    price: Number(document.getElementById("price").value),
+    setInventory((prev) => [...prev, item]);
+    setDirty(true);
+    form.reset();
   };
 
-  inventory.push(item);
-  hasUnsavedChanges = true;
+  const importJSON = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  renderInventory();
-  form.reset();
-});
-
-// --------------------
-// Import JSON
-// --------------------
-importBtn.addEventListener("click", () => {
-  importFile.click();
-});
-
-importFile.addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    try {
-      const data = JSON.parse(reader.result);
-
-      if (!Array.isArray(data)) {
-        alert("Invalid file format: expected an array");
-        return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!Array.isArray(data)) throw new Error();
+        setInventory(data);
+        setDirty(false);
+      } catch {
+        alert("Invalid inventory JSON file");
       }
-
-      inventory = data;
-      hasUnsavedChanges = false;
-      renderInventory();
-    } catch {
-      alert("Failed to parse JSON file");
-    }
+    };
+    reader.readAsText(file);
   };
 
-  reader.readAsText(file);
-});
+  const exportJSON = () => {
+    const blob = new Blob(
+      [JSON.stringify(inventory, null, 2)],
+      { type: "application/json" }
+    );
 
-// --------------------
-// Export JSON
-// --------------------
-exportBtn.addEventListener("click", () => {
-  const blob = new Blob(
-    [JSON.stringify(inventory, null, 2)],
-    { type: "application/json" }
-  );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "inventory.json";
+    a.click();
+    URL.revokeObjectURL(url);
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+    setDirty(false);
+  };
 
-  a.href = url;
-  a.download = "inventory.json";
-  a.click();
+  return (
+    <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
+      <h1>Manage Inventory</h1>
 
-  URL.revokeObjectURL(url);
-  hasUnsavedChanges = false;
-});
+      <div style={{ marginBottom: "1rem" }}>
+        <label>
+          <strong>Import JSON</strong>
+          <input
+            type="file"
+            accept=".json"
+            onChange={importJSON}
+            style={{ display: "block", marginTop: "0.5rem" }}
+          />
+        </label>
 
-// --------------------
-// Warn on Exit
-// --------------------
-window.addEventListener("beforeunload", (e) => {
-  if (!hasUnsavedChanges) return;
-  e.preventDefault();
-  e.returnValue = "";
-});
+        <button
+          onClick={exportJSON}
+          style={{ marginTop: "0.5rem" }}
+          disabled={inventory.length === 0}
+        >
+          Export JSON
+        </button>
+      </div>
+
+      <form onSubmit={addItem} style={{ marginBottom: "1rem" }}>
+        <input name="sku" placeholder="SKU" required />
+        <input name="name" placeholder="Name" required />
+        <input name="quantity" type="number" placeholder="Qty" required />
+        <input
+          name="price"
+          type="number"
+          step="0.01"
+          placeholder="Price"
+          required
+        />
+        <button type="submit">Add Item</button>
+      </form>
+
+      <table border="1" cellPadding="6">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Name</th>
+            <th>Qty</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {inventory.map((item, i) => (
+            <tr key={i}>
+              <td>{item.sku}</td>
+              <td>{item.name}</td>
+              <td>{item.quantity}</td>
+              <td>${item.price.toFixed(2)}</td>
