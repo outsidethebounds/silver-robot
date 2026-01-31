@@ -122,3 +122,51 @@ function ManageView({
                   />
                   {s}
                 </label>
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Size">
+            <div className="space-y-2">
+              {['Medium', 'Large', 'Other'].map((s) => (
+                <label key={s} className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="size"
+                    value={s}
+                    checked={form.size === s}
+                    onChange={(e) => updateField('size', e.target.value)}
+                  />
+                  {s}
+                </label>
+              ))}
+              {form.size === 'Other' && (
+                <input
+                  placeholder="Enter size"
+                  className="w-full border rounded px-2 py-1"
+                  onChange={(e) => updateField('size', e.target.value)}
+                />
+              )}
+            </div>
+          </Field>
+
+          <button
+            type="submit"
+            className="bg-forest-700 text-white px-4 py-2 rounded"
+          >
+            Save Item
+          </button>
+        </form>
+      )}
+
+      <TableView
+        items={items}
+        conditions={conditions}
+        sources={sources}
+        onDeleteItems={onDeleteItems}
+      />
+    </section>
+  );
+}
+
+export default ManageView;
