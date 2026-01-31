@@ -9,8 +9,6 @@ import ManageView from './components/ManageView.jsx';
 function App() {
   const [items, setItems] = useState([]);
   const [mode, setMode] = useState('catalog');
-  const [editingItem, setEditingItem] = useState(null);
-  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     setItems(loadItems());
@@ -22,13 +20,6 @@ function App() {
 
   const handleAddItem = (item) => {
     setItems((prev) => [item, ...prev]);
-    setShowForm(false);
-  };
-
-  const handleUpdateItem = (item) => {
-    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
-    setEditingItem(null);
-    setShowForm(false);
   };
 
   const handleDeleteItems = (ids) => {
@@ -40,7 +31,7 @@ function App() {
       <div className="max-w-6xl mx-auto px-4 py-6">
         <header className="flex items-center gap-3 mb-6">
           <div className="w-11 h-11 rounded-xl bg-forest-700 text-white flex items-center justify-center">
-            <Mountain />
+            <Mountain className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-2xl font-semibold">Blake&apos;s Clothes</h1>
@@ -50,32 +41,26 @@ function App() {
 
         <TopNav mode={mode} onChangeMode={setMode} />
 
-        {mode === 'catalog' && (
-          <CatalogView
-            items={items}
-            calculateDiscountedPrice={calculateDiscountedPrice}
-            formatCurrency={formatCurrency}
-          />
-        )}
+        <main className="mt-6">
+          {mode === 'catalog' && (
+            <CatalogView
+              items={items}
+              calculateDiscountedPrice={calculateDiscountedPrice}
+              formatCurrency={formatCurrency}
+            />
+          )}
 
-        {mode === 'manage' && (
-          <ManageView
-            items={items}
-            categories={CATEGORIES}
-            conditions={CONDITIONS}
-            sources={SOURCES}
-            editingItem={editingItem}
-            showForm={showForm}
-            onShowForm={() => setShowForm(true)}
-            onCancelForm={() => {
-              setEditingItem(null);
-              setShowForm(false);
-            }}
-            onAddItem={handleAddItem}
-            onUpdateItem={handleUpdateItem}
-            onDeleteItems={handleDeleteItems}
-          />
-        )}
+          {mode === 'manage' && (
+            <ManageView
+              items={items}
+              categories={CATEGORIES}
+              conditions={CONDITIONS}
+              sources={SOURCES}
+              onAddItem={handleAddItem}
+              onDeleteItems={handleDeleteItems}
+            />
+          )}
+        </main>
       </div>
     </div>
   );
