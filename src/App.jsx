@@ -5,130 +5,77 @@ import { loadItems, saveItems, calculateDiscountedPrice, formatCurrency } from '
 import TopNav from './components/TopNav.jsx';
 import CatalogView from './components/CatalogView.jsx';
 import ManageView from './components/ManageView.jsx';
-import TableView from './components/TableView.jsx';
 
 function App() {
   const [items, setItems] = useState([]);
-  const [mode, setMode] = useState('catalog'); // 'catalog' | 'manage' | 'table'
-  const [editingId, setEditingId] = useState(null);
+  const [mode, setMode] = useState('catalog');
+  const [editingItem, setEditingItem] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
-  // Load from localStorage on first mount
   useEffect(() => {
-    const loaded = loadItems();
-    setItems(loaded);
+    setItems(loadItems());
   }, []);
 
-  // Persist to localStorage whenever items change
   useEffect(() => {
     saveItems(items);
   }, [items]);
 
-  const handleAddItem = (newItem) => {
-    setItems((prev) => [newItem, ...prev]);
+  const handleAddItem = (item) => {
+    setItems((prev) => [item, ...prev]);
+    setShowForm(false);
   };
 
-  const handleUpdateItem = (updatedItem) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
-    );
-    setEditingId(null);
+  const handleUpdateItem = (item) => {
+    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    setEditingItem(null);
+    setShowForm(false);
   };
 
-  const handleDeleteItem = (id) => {
-    setItems((prev) => prev.filter((it) => it.id !== id));
+  const handleDeleteItems = (ids) => {
+    setItems((prev) => prev.filter((i) => !ids.includes(i.id)));
   };
-
-  const handleDeleteMany = (ids) => {
-    setItems((prev) => prev.filter((it) => !ids.includes(it.id)));
-  };
-
-  const handleStartEdit = (id) => {
-    setEditingId(id);
-    setMode('manage');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setMode('catalog');
-  };
-
-  const handleAddNewItem = () => {
-    setEditingId(null);
-    setMode('manage');
-  };
-
-  const handleImportItems = (newItems) => {
-    if (!Array.isArray(newItems) || newItems.length === 0) return;
-    setItems((prev) => [...newItems, ...prev]);
-  };
-
-  const editingItem = items.find((it) => it.id === editingId) || null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-50 via-slate-50 to-emerald-100 text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-forest-50 via-slate-50 to-emerald-100">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <header className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-forest-700 text-white shadow-md">
-            <Mountain className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-xl bg-forest-700 text-white flex items-center justify-center">
+            <Mountain />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Blake&apos;s Clothes
-            </h1>
-            <p className="text-sm text-slate-600">
-              Outdoor &amp; active wardrobe inventory
-            </p>
+            <h1 className="text-2xl font-semibold">Blake&apos;s Clothes</h1>
+            <p className="text-sm text-slate-600">Inventory manager</p>
           </div>
         </header>
 
         <TopNav mode={mode} onChangeMode={setMode} />
 
-        {/* Add New Item button */}
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={handleAddNewItem}
-            className="rounded-md bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 shadow-sm"
-          >
-            Add New Item
-          </button>
-        </div>
+        {mode === 'catalog' && (
+          <CatalogView
+            items={items}
+            calculateDiscountedPrice={calculateDiscountedPrice}
+            formatCurrency={formatCurrency}
+          />
+        )}
 
-        <main className="mt-6">
-          {mode === 'catalog' && (
-            <CatalogView
-              items={items}
-              onEditItem={handleStartEdit}
-              onDeleteItem={handleDeleteItem}
-              calculateDiscountedPrice={calculateDiscountedPrice}
-              formatCurrency={formatCurrency}
-            />
-          )}
-
-          {mode === 'manage' && (
-            <ManageView
-              item={editingItem}
-              categories={CATEGORIES}
-              conditions={CONDITIONS}
-              sources={SOURCES}
-              onAddItem={handleAddItem}
-              onUpdateItem={handleUpdateItem}
-              onDone={() => setMode('catalog')}
-              onCancelEdit={handleCancelEdit}
-            />
-          )}
-
-          {mode === 'table' && (
-            <TableView
-              items={items}
-              conditions={CONDITIONS}
-              sources={SOURCES}
-              onAddBlankItem={handleAddItem}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItems={handleDeleteMany}
-              onImportItems={handleImportItems}
-            />
-          )}
-        </main>
+        {mode === 'manage' && (
+          <ManageView
+            items={items}
+            categories={CATEGORIES}
+            conditions={CONDITIONS}
+            sources={SOURCES}
+            editingItem={editingItem}
+            showForm={showForm}
+            onShowForm={() => setShowForm(true)}
+            onCancelForm={() => {
+              setEditingItem(null);
+              setShowForm(false);
+            }}
+            onAddItem={handleAddItem}
+            onUpdateItem={handleUpdateItem}
+            onDeleteItems={handleDeleteItems}
+          />
+        )}
       </div>
     </div>
   );
