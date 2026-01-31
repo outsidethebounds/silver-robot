@@ -304,14 +304,40 @@ function CatalogView({ items, onEditItem, onDeleteItem, calculateDiscountedPrice
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredAndSortedItems.map((item) => (
-              <ProductCard
-                key={item.id}
-                item={item}
-                onEdit={onEditItem}
-                onDelete={onDeleteItem}
-                calculateDiscountedPrice={calculateDiscountedPrice}
-                formatCurrency={formatCurrency}
+           {filteredAndSortedItems.length === 0 ? (
+  <EmptyState
+    title="No items match your filters"
+    message="Try clearing filters or adjusting search."
+  />
+) : (
+  Object.entries(
+    filteredAndSortedItems.reduce((acc, item) => {
+      const cat = item.category || 'Uncategorized';
+      acc[cat] = acc[cat] || [];
+      acc[cat].push(item);
+      return acc;
+    }, {})
+  ).map(([category, items]) => (
+    <section key={category} className="space-y-3">
+      <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-700">
+        {category}
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        {items.map((item) => (
+          <ProductCard
+            key={item.id}
+            item={item}
+            onSelect={onEditItem} // temporary: opens detail view
+            calculateDiscountedPrice={calculateDiscountedPrice}
+            formatCurrency={formatCurrency}
+          />
+        ))}
+      </div>
+    </section>
+  ))
+)}
+
               />
             ))}
           </div>
