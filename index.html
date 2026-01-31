@@ -1,69 +1,12 @@
-<h1 style="color:red;">DEBUG: UPDATED FILE</h1>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manage Inventory</title>
-    <script type="module" src="/main.js" defer></script>
-    <style>
-      body {
-        font-family: sans-serif;
-        padding: 2rem;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 1rem;
-      }
-      th, td {
-        border: 1px solid #ccc;
-        padding: 0.5rem;
-        text-align: left;
-      }
-      .controls {
-        margin-bottom: 1rem;
-      }
-      .controls button {
-        margin-right: 0.5rem;
-      }
-      form input {
-        margin-right: 0.5rem;
-      }
-    </style>
+    <title>Inventory Manager</title>
   </head>
   <body>
-
-    <h1>Manage Inventory</h1>
-
-    <!-- Import / Export -->
-    <div class="controls">
-      <input type="file" id="importFile" accept=".json" hidden />
-      <button id="importBtn">Import JSON</button>
-      <button id="exportBtn">Export JSON</button>
-    </div>
-
-    <!-- Add Item -->
-    <form id="inventoryForm">
-      <input type="text" id="sku" placeholder="SKU" required />
-      <input type="text" id="name" placeholder="Name" required />
-      <input type="number" id="quantity" placeholder="Quantity" required />
-      <input type="number" id="price" placeholder="Price" step="0.01" required />
-      <button type="submit">Add Item</button>
-    </form>
-
-    <!-- Inventory Table -->
-    <table>
-      <thead>
-        <tr>
-          <th>SKU</th>
-          <th>Name</th>
-          <th>Quantity</th>
-          <th>Price</th>
-        </tr>
-      </thead>
-      <tbody id="inventoryTable"></tbody>
-    </table>
-
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
