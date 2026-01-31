@@ -28,7 +28,9 @@ function App() {
   };
 
   const handleUpdateItem = (updatedItem) => {
-    setItems((prev) => prev.map((it) => (it.id === updatedItem.id ? updatedItem : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
+    );
     setEditingId(null);
   };
 
@@ -50,6 +52,11 @@ function App() {
     setMode('catalog');
   };
 
+  const handleAddNewItem = () => {
+    setEditingId(null);
+    setMode('manage');
+  };
+
   const handleImportItems = (newItems) => {
     if (!Array.isArray(newItems) || newItems.length === 0) return;
     setItems((prev) => [...newItems, ...prev]);
@@ -65,12 +72,26 @@ function App() {
             <Mountain className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Blake&apos;s Clothes</h1>
-            <p className="text-sm text-slate-600">Outdoor &amp; active wardrobe inventory</p>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Blake&apos;s Clothes
+            </h1>
+            <p className="text-sm text-slate-600">
+              Outdoor &amp; active wardrobe inventory
+            </p>
           </div>
         </header>
 
         <TopNav mode={mode} onChangeMode={setMode} />
+
+        {/* Add New Item button */}
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={handleAddNewItem}
+            className="rounded-md bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 shadow-sm"
+          >
+            Add New Item
+          </button>
+        </div>
 
         <main className="mt-6">
           {mode === 'catalog' && (
