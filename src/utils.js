@@ -21,6 +21,14 @@ export const discountedPrice = (listPrice, discountPercent) => {
   return Math.max(0, next);
 };
 
+export const effectiveDiscountPercent = (item) => {
+  const list = parseMoney(item?.listPrice);
+  if (list <= 0) return 0;
+  const paidPlusShipping = itemBasePrice(item) + parseMoney(item?.shippingPrice);
+  const percent = 100 - (paidPlusShipping / list) * 100;
+  return Math.max(0, percent);
+};
+
 export const totalPaid = (item) => itemBasePrice(item) + parseMoney(item.shippingPrice);
 
 export const generateId = () => crypto.randomUUID?.() || `item_${Date.now()}`;

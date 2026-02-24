@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CATEGORIES, CONDITIONS, SORT_OPTIONS, SOURCES } from '../constants';
 import { getDisplaySize, groupByCategory, itemBasePrice, itemSearchText } from '../utils';
 import ProductCard from './ProductCard';
@@ -22,6 +23,7 @@ export default function CatalogView({ items, onSelectItem }) {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortOption, setSortOption] = useState('Newest');
+  const [openSections, setOpenSections] = useState({});
 
   const filtered = useMemo(() => items.filter((item) => {
     if (search && !itemSearchText(item).includes(search.toLowerCase())) return false;
@@ -42,6 +44,9 @@ export default function CatalogView({ items, onSelectItem }) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([name, list]) => [name, sortItems(list, sortOption)]);
   }, [filtered, sortOption]);
+
+  const isSectionOpen = (name) => Boolean(openSections[name]);
+  const toggleSection = (name) => setOpenSections((prev) => ({ ...prev, [name]: !prev[name] }));
 
   return (
     <div className="grid gap-4 lg:grid-cols-[240px,1fr]">
@@ -75,15 +80,23 @@ export default function CatalogView({ items, onSelectItem }) {
         </div>
 
         {grouped.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">No items found.</div> : (
-          <div className="space-y-6">
-            {grouped.map(([catName, list]) => (
-              <div key={catName}>
-                <h3 className="mb-3 text-lg font-semibold">{catName}</h3>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {list.map((item) => <ProductCard key={item.id} item={item} onClick={onSelectItem} />)}
+          <div className="space-y-4">
+            {grouped.map(([catName, list]) => {
+              const open = isSectionOpen(catName);
+              return (
+                <div key={catName} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                  <button type="button" onClick={() => toggleSection(catName)} className="flex w-full items-center justify-between text-left">
+                    <h3 className="text-lg font-semibold">{catName} <span className="text-sm font-normal text-slate-500">({list.length})</span></h3>
+                    {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </button>
+                  {open && (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {list.map((item) => <ProductCard key={item.id} item={item} onClick={onSelectItem} />)}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
