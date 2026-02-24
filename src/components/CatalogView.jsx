@@ -1,217 +1,92 @@
 import { useMemo, useState } from 'react';
-import { Search, Filter } from 'lucide-react';
-import ProductCard from './ProductCard.jsx';
-import EmptyState from './EmptyState.jsx';
-import { ALL_CATEGORIES, CONDITIONS, SOURCES } from '../constants.js';
+import { CATEGORIES, CONDITIONS, SORT_OPTIONS, SOURCES } from '../constants';
+import { getDisplaySize, groupByCategory, itemBasePrice, itemSearchText } from '../utils';
+import ProductCard from './ProductCard';
 
-function CatalogView({
-  items,
-  onSelectItem,
-  calculateDiscountedPrice,
-  formatCurrency,
-}) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sizeFilter, setSizeFilter] = useState('');
-  const [colorFilter, setColorFilter] = useState('');
-  const [conditionFilter, setConditionFilter] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('');
+const sortItems = (items, option) => {
+  const sorted = [...items];
+  if (option === 'Alphabetical') sorted.sort((a, b) => a.name.localeCompare(b.name));
+  if (option === 'Price: Low to High') sorted.sort((a, b) => itemBasePrice(a) - itemBasePrice(b));
+  if (option === 'Price: High to Low') sorted.sort((a, b) => itemBasePrice(b) - itemBasePrice(a));
+  if (option === 'Newest') sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  return sorted;
+};
+
+export default function CatalogView({ items, onSelectItem }) {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  const [condition, setCondition] = useState('');
+  const [source, setSource] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortOption, setSortOption] = useState('Newest');
-  const [filtersOpen, setFiltersOpen] = useState(true);
 
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedCategory('All');
-    setSizeFilter('');
-    setColorFilter('');
-    setConditionFilter('');
-    setSourceFilter('');
-    setMinPrice('');
-    setMaxPrice('');
-    setSortOption('Newest');
-  };
+  const filtered = useMemo(() => items.filter((item) => {
+    if (search && !itemSearchText(item).includes(search.toLowerCase())) return false;
+    if (category !== 'All' && item.category !== category) return false;
+    if (size && !getDisplaySize(item).toLowerCase().includes(size.toLowerCase())) return false;
+    if (color && !String(item.color || '').toLowerCase().includes(color.toLowerCase())) return false;
+    if (condition && item.condition !== condition) return false;
+    if (source && item.source !== source) return false;
+    const price = itemBasePrice(item);
+    if (minPrice && price < Number(minPrice)) return false;
+    if (maxPrice && price > Number(maxPrice)) return false;
+    return true;
+  }), [items, search, category, size, color, condition, source, minPrice, maxPrice]);
 
-  const filteredAndSortedItems = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const min = minPrice ? parseFloat(minPrice) : null;
-    const max = maxPrice ? parseFloat(maxPrice) : null;
-
-    let result = items.filter((item) => {
-      if (q) {
-        const haystack = [
-          item.name,
-          item.color,
-          item.size,
-          item.styleNumber,
-          item.season,
-          item.year,
-          item.notes,
-          item.source,
-          item.condition,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-
-      if (selectedCategory !== 'All' && item.category !== selectedCategory) {
-        return false;
-      }
-
-      if (sizeFilter && !String(item.size || '').toLowerCase().includes(sizeFilter.toLowerCase())) {
-        return false;
-      }
-
-      if (colorFilter && !String(item.color || '').toLowerCase().includes(colorFilter.toLowerCase())) {
-        return false;
-      }
-
-      if (conditionFilter && item.condition !== conditionFilter) {
-        return false;
-      }
-
-      if (sourceFilter && item.source !== sourceFilter) {
-        return false;
-      }
-
-      if (min !== null || max !== null) {
-        const discounted = calculateDiscountedPrice(item.listPrice, item.discount);
-        if (min !== null && discounted < min) return false;
-        if (max !== null && discounted > max) return false;
-      }
-
-      return true;
-    });
-
-    result = [...result];
-
-    if (sortOption === 'Newest') {
-      result.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    } else if (sortOption === 'Alphabetical') {
-      result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } else if (sortOption === 'Price: Low to High') {
-      result.sort(
-        (a, b) =>
-          calculateDiscountedPrice(a.listPrice, a.discount) -
-          calculateDiscountedPrice(b.listPrice, b.discount)
-      );
-    } else if (sortOption === 'Price: High to Low') {
-      result.sort(
-        (a, b) =>
-          calculateDiscountedPrice(b.listPrice, b.discount) -
-          calculateDiscountedPrice(a.listPrice, a.discount)
-      );
-    }
-
-    return result;
-  }, [
-    items,
-    searchQuery,
-    selectedCategory,
-    sizeFilter,
-    colorFilter,
-    conditionFilter,
-    sourceFilter,
-    minPrice,
-    maxPrice,
-    sortOption,
-    calculateDiscountedPrice,
-  ]);
-
-  const groupedByCategory = useMemo(() => {
-    return filteredAndSortedItems.reduce((acc, item) => {
-      const cat = item.category || 'Uncategorized';
-      acc[cat] = acc[cat] || [];
-      acc[cat].push(item);
-      return acc;
-    }, {});
-  }, [filteredAndSortedItems]);
+  const grouped = useMemo(() => {
+    const byCategory = groupByCategory(filtered);
+    return Object.entries(byCategory)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, list]) => [name, sortItems(list, sortOption)]);
+  }, [filtered, sortOption]);
 
   return (
-    <div className="flex flex-col md:flex-row gap-4">
-      {/* Categories */}
-      <aside className="md:w-56 flex-shrink-0">
-        <div className="bg-white/80 border border-slate-200 rounded-xl shadow-sm p-3">
-          <h2 className="text-xs font-semibold tracking-wide text-slate-700 uppercase mb-2">
-            Categories
-          </h2>
-          <div className="flex flex-col gap-1">
-            {ALL_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`text-left px-2.5 py-1.5 rounded-md text-xs border
-                  ${
-                    selectedCategory === cat
-                      ? 'bg-forest-700 text-white border-forest-700'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
+    <div className="grid gap-4 lg:grid-cols-[240px,1fr]">
+      <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-2 text-sm font-semibold">Filters</h2>
+        <div className="space-y-2 text-sm">
+          <input className="w-full rounded-lg border p-2" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <select className="w-full rounded-lg border p-2" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option>All</option>{CATEGORIES.map((entry) => <option key={entry}>{entry}</option>)}
+          </select>
+          <input className="w-full rounded-lg border p-2" placeholder="Size" value={size} onChange={(e) => setSize(e.target.value)} />
+          <input className="w-full rounded-lg border p-2" placeholder="Color" value={color} onChange={(e) => setColor(e.target.value)} />
+          <select className="w-full rounded-lg border p-2" value={condition} onChange={(e) => setCondition(e.target.value)}>
+            <option value="">Condition</option>{CONDITIONS.map((entry) => <option key={entry}>{entry}</option>)}
+          </select>
+          <select className="w-full rounded-lg border p-2" value={source} onChange={(e) => setSource(e.target.value)}>
+            <option value="">Source</option>{SOURCES.map((entry) => <option key={entry}>{entry}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <input className="rounded-lg border p-2" placeholder="Min $" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
+            <input className="rounded-lg border p-2" placeholder="Max $" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
           </div>
         </div>
       </aside>
-
-      {/* Main */}
-      <section className="flex-1 flex flex-col gap-4">
-        {/* Search & Sort */}
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search inventory…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200"
-            />
-          </div>
-
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-            className="text-sm rounded-lg border border-slate-200 px-2 py-1.5"
-          >
-            <option>Newest</option>
-            <option>Alphabetical</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm text-slate-600">{filtered.length} item(s)</p>
+          <select className="rounded-lg border bg-white p-2 text-sm" value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+            {SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}
           </select>
         </div>
 
-        {filteredAndSortedItems.length === 0 ? (
-          <EmptyState
-            title="No items match your filters"
-            message="Try adjusting search or filters."
-          />
-        ) : (
-          Object.entries(groupedByCategory).map(([category, items]) => (
-            <section key={category} className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-                {category}
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {items.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    item={item}
-                    onSelect={onSelectItem}
-                    calculateDiscountedPrice={calculateDiscountedPrice}
-                    formatCurrency={formatCurrency}
-                  />
-                ))}
+        {grouped.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">No items found.</div> : (
+          <div className="space-y-6">
+            {grouped.map(([catName, list]) => (
+              <div key={catName}>
+                <h3 className="mb-3 text-lg font-semibold">{catName}</h3>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {list.map((item) => <ProductCard key={item.id} item={item} onClick={onSelectItem} />)}
+                </div>
               </div>
-            </section>
-          ))
+            ))}
+          </div>
         )}
       </section>
     </div>
   );
 }
-
-export default CatalogView;

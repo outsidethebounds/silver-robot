@@ -1,100 +1,111 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Mountain } from 'lucide-react';
-import { CATEGORIES, CONDITIONS, SOURCES } from './constants.js';
-import { loadItems, saveItems, calculateDiscountedPrice, formatCurrency } from './utils.js';
-import TopNav from './components/TopNav.jsx';
-import CatalogView from './components/CatalogView.jsx';
-import ManageView from './components/ManageView.jsx';
-import ProductDetailPanel from './components/ProductDetailPanel.jsx';
+import {
+  CATEGORIES,
+  CONDITIONS,
+  EMPTY_ITEM,
+  SOURCES,
+} from './constants';
+import { generateId, loadInventory, saveInventory, validateInventoryImport } from './utils';
+import TopNav from './components/TopNav';
+import CatalogView from './components/CatalogView';
+import ManageView from './components/ManageView';
+import ProductDetailPanel from './components/ProductDetailPanel';
 
-function App() {
-  const [items, setItems] = useState([]);
+export default function App() {
   const [mode, setMode] = useState('catalog');
+  const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [editingId, setEditingId] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
 
   useEffect(() => {
-    setItems(loadItems());
+    setItems(loadInventory());
   }, []);
 
   useEffect(() => {
-    saveItems(items);
+    saveInventory(items);
   }, [items]);
 
-  const handleAddItem = (item) => {
-    setItems((prev) => [item, ...prev]);
+  const sortedForTable = useMemo(
+    () => [...items].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
+    [items]
+  );
+
+  const handleSaveItem = (payload) => {
+    if (payload.id) {
+      setItems((prev) => prev.map((item) => (item.id === payload.id ? payload : item)));
+      return;
+    }
+    setItems((prev) => [{ ...EMPTY_ITEM, ...payload, id: generateId(), createdAt: new Date().toISOString() }, ...prev]);
   };
 
-  const handleUpdateItem = (updatedItem) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
-    );
+  const exportBackup = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `inventory-backup-${stamp}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleDeleteMany = (ids) => {
-    setItems((prev) => prev.filter((it) => !ids.includes(it.id)));
+  const importBackup = async (file) => {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const validation = validateInventoryImport(parsed);
+    if (!validation.valid) {
+      window.alert(validation.message);
+      return;
+    }
+    if (!window.confirm('This will overwrite your current inventory. Continue?')) return;
+    setItems(parsed);
+    setSelectedItem(null);
+    setEditingItem(null);
   };
-
-  const handleImportItems = (newItems) => {
-    if (!Array.isArray(newItems) || newItems.length === 0) return;
-    setItems((prev) => [...newItems, ...prev]);
-  };
-
-  const editingItem = items.find((it) => it.id === editingId) || null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-50 via-slate-50 to-emerald-100 text-slate-900">
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <header className="flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 rounded-xl bg-forest-700 text-white flex items-center justify-center shadow-md">
-            <Mountain className="w-6 h-6" />
-          </div>
+    <div className="min-h-screen bg-[#f5f7f2] text-slate-900">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <header className="mb-5 flex items-center gap-3">
+          <div className="rounded-xl bg-[#25533b] p-2.5 text-white"><Mountain size={24} /></div>
           <div>
-            <h1 className="text-2xl font-semibold">Blake&apos;s Clothes</h1>
-            <p className="text-sm text-slate-600">Outdoor wardrobe inventory</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Trail Inventory</h1>
+            <p className="text-sm text-slate-600">Single-user local inventory manager</p>
           </div>
         </header>
 
-        <TopNav mode={mode} onChangeMode={setMode} />
+        <TopNav mode={mode} onModeChange={setMode} />
 
-        <main className="mt-6">
-          {mode === 'catalog' && (
-            <CatalogView
-              items={items}
-              onSelectItem={(item) => setSelectedItem(item)}
-              calculateDiscountedPrice={calculateDiscountedPrice}
-              formatCurrency={formatCurrency}
-            />
-          )}
-
-          {mode === 'manage' && (
+        <div className="mt-5">
+          {mode === 'catalog' ? (
+            <CatalogView items={items} onSelectItem={setSelectedItem} />
+          ) : (
             <ManageView
-              items={items}
+              items={sortedForTable}
               categories={CATEGORIES}
               conditions={CONDITIONS}
               sources={SOURCES}
-              onAddItem={handleAddItem}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItems={handleDeleteMany}
-              onImportItems={handleImportItems}
               editingItem={editingItem}
+              onEditItem={setEditingItem}
+              onSaveItem={handleSaveItem}
+              onDeleteItems={(ids) => setItems((prev) => prev.filter((item) => !ids.includes(item.id)))}
+              onExport={exportBackup}
+              onImport={importBackup}
             />
           )}
-        </main>
+        </div>
       </div>
 
-      {/* Slide-over details */}
       <ProductDetailPanel
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         onEdit={(item) => {
           setSelectedItem(null);
-          setEditingId(item.id);
           setMode('manage');
+          setEditingItem(item);
         }}
       />
     </div>
   );
 }
-
-export default App;
