@@ -1,17 +1,10 @@
 import { STORAGE_KEY } from './constants';
-import { SEED_ITEMS } from './seedData';
 
 export const currency = (value) => `$${Number(value || 0).toFixed(2)}`;
 
 export const parseMoney = (value) => {
   const num = Number.parseFloat(String(value ?? '').replace(/[^\d.-]/g, ''));
   return Number.isFinite(num) ? num : 0;
-};
-
-export const itemBasePrice = (item) => {
-  const direct = parseMoney(item?.pricePaid);
-  if (direct > 0) return direct;
-  return discountedPrice(item?.listPrice, item?.discount);
 };
 
 export const discountedPrice = (listPrice, discountPercent) => {
@@ -21,15 +14,7 @@ export const discountedPrice = (listPrice, discountPercent) => {
   return Math.max(0, next);
 };
 
-export const effectiveDiscountPercent = (item) => {
-  const list = parseMoney(item?.listPrice);
-  if (list <= 0) return 0;
-  const paidPlusShipping = itemBasePrice(item) + parseMoney(item?.shippingPrice);
-  const percent = 100 - (paidPlusShipping / list) * 100;
-  return Math.max(0, percent);
-};
-
-export const totalPaid = (item) => itemBasePrice(item) + parseMoney(item.shippingPrice);
+export const totalPaid = (item) => discountedPrice(item.listPrice, item.discount) + parseMoney(item.shippingPrice);
 
 export const generateId = () => crypto.randomUUID?.() || `item_${Date.now()}`;
 
@@ -39,12 +24,12 @@ export const saveInventory = (items) => {
 
 export const loadInventory = () => {
   const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return SEED_ITEMS;
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : SEED_ITEMS;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return SEED_ITEMS;
+    return [];
   }
 };
 

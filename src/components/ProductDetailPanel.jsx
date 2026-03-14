@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { currency, effectiveDiscountPercent, getDisplaySize, itemBasePrice, parseMoney } from '../utils';
+import { currency, discountedPrice, getDisplaySize, parseMoney } from '../utils';
 
 export default function ProductDetailPanel({ item, onClose, onEdit }) {
   const open = Boolean(item);
@@ -21,23 +21,15 @@ export default function ProductDetailPanel({ item, onClose, onEdit }) {
             </div>
             <h3 className="text-lg font-semibold">{item.name}</h3>
             <p className="mb-3 text-sm text-slate-600">{item.season} {item.year}</p>
-
-            <div className="mb-3 rounded-xl border-2 border-[#25533b] bg-[#25533b]/5 p-4">
-              <p className="text-xs uppercase tracking-wide text-slate-600">Price Summary</p>
-              <p className="mt-1 text-3xl font-bold text-[#25533b]">{currency(itemBasePrice(item))}</p>
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-slate-600">Shipping: {currency(parseMoney(item.shippingPrice))}</span>
-                <span className="font-semibold text-emerald-700">{effectiveDiscountPercent(item).toFixed(1)}% off list</span>
-              </div>
-            </div>
-
             <dl className="grid grid-cols-2 gap-3 rounded-xl border p-4 text-sm">
+              <Detail label="Price" value={currency(discountedPrice(item.listPrice, item.discount))} />
+              <Detail label="Shipping" value={currency(parseMoney(item.shippingPrice))} />
+              <Detail label="Category" value={item.category} />
               <Detail label="Size" value={getDisplaySize(item)} />
               <Detail label="Color" value={item.color || '-'} />
               <Detail label="Condition" value={item.condition || '-'} />
               <Detail label="Style #" value={item.styleNumber || '-'} />
               <Detail label="Source" value={item.source || '-'} />
-              <Detail label="List Price" value={currency(parseMoney(item.listPrice))} />
             </dl>
             <div className="mt-3 rounded-xl border p-4 text-sm">
               <p className="mb-1 font-medium">Notes</p>

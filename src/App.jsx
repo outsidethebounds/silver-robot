@@ -70,8 +70,8 @@ export default function App() {
         <header className="mb-5 flex items-center gap-3">
           <div className="rounded-xl bg-[#25533b] p-2.5 text-white"><Mountain size={24} /></div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Gorpcore Browser</h1>
-            <p className="text-sm text-slate-600">Blake S</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Trail Inventory</h1>
+            <p className="text-sm text-slate-600">Single-user local inventory manager</p>
           </div>
         </header>
 

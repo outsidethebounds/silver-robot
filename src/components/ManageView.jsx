@@ -1,15 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EMPTY_ITEM, SEASONS, SIZE_OPTIONS } from '../constants';
-import { generateId, parseMoney, totalPaid } from '../utils';
-
-const SORTABLE_COLUMNS = [
-  { key: 'name', label: 'Item' },
-  { key: 'category', label: 'Category' },
-  { key: 'seasonYear', label: 'Season/Year' },
-  { key: 'condition', label: 'Condition' },
-  { key: 'source', label: 'Source' },
-  { key: 'pricePaid', label: 'Price Paid' },
-];
+import { discountedPrice, generateId, parseMoney, totalPaid } from '../utils';
 
 export default function ManageView({
   items,
@@ -27,7 +18,6 @@ export default function ManageView({
   const [form, setForm] = useState(EMPTY_ITEM);
   const [selectedIds, setSelectedIds] = useState([]);
   const [message, setMessage] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const importRef = useRef(null);
 
   useEffect(() => {
@@ -37,28 +27,7 @@ export default function ManageView({
     }
   }, [editingItem]);
 
-  const getSortValue = (item, key) => {
-    if (key === 'seasonYear') return `${item.season || ''} ${item.year || ''}`.trim();
-    if (key === 'pricePaid') return parseMoney(item.pricePaid || totalPaid(item));
-    if (key === 'createdAt') return new Date(item.createdAt || 0).getTime();
-    return String(item[key] || '').toLowerCase();
-  };
-
-  const sortedItems = useMemo(() => {
-    const next = [...items];
-    const { key, direction } = sortConfig;
-    next.sort((a, b) => {
-      const va = getSortValue(a, key);
-      const vb = getSortValue(b, key);
-      if (typeof va === 'number' && typeof vb === 'number') {
-        return direction === 'asc' ? va - vb : vb - va;
-      }
-      return direction === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-    });
-    return next;
-  }, [items, sortConfig]);
-
-  const allSelected = useMemo(() => sortedItems.length > 0 && selectedIds.length === sortedItems.length, [sortedItems, selectedIds]);
+  const allSelected = useMemo(() => items.length > 0 && selectedIds.length === items.length, [items, selectedIds]);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -99,13 +68,6 @@ export default function ManageView({
     } finally {
       event.target.value = '';
     }
-  };
-
-  const toggleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
-    }));
   };
 
   return (
@@ -173,20 +135,12 @@ export default function ManageView({
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left">
               <tr>
-                <th className="p-2"><input type="checkbox" checked={allSelected} onChange={() => setSelectedIds(allSelected ? [] : sortedItems.map((i) => i.id))} /></th>
-                {SORTABLE_COLUMNS.map((col) => (
-                  <th key={col.key} className="p-2">
-                    <button type="button" className="inline-flex items-center gap-1 font-medium" onClick={() => toggleSort(col.key)}>
-                      {col.label}
-                      {sortConfig.key === col.key ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '↕'}
-                    </button>
-                  </th>
-                ))}
-                <th className="p-2">Actions</th>
+                <th className="p-2"><input type="checkbox" checked={allSelected} onChange={() => setSelectedIds(allSelected ? [] : items.map((i) => i.id))} /></th>
+                <th className="p-2">Item</th><th className="p-2">Category</th><th className="p-2">Season/Year</th><th className="p-2">Condition</th><th className="p-2">Source</th><th className="p-2">Price Paid</th><th className="p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {sortedItems.map((item) => (
+              {items.map((item) => (
                 <tr key={item.id} className="border-t">
                   <td className="p-2"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds((prev) => prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id])} /></td>
                   <td className="p-2 font-medium">{item.name}</td>

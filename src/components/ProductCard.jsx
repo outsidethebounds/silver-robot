@@ -1,7 +1,7 @@
-import { currency, itemBasePrice } from '../utils';
+import { currency, discountedPrice } from '../utils';
 
 export default function ProductCard({ item, onClick }) {
-  const price = itemBasePrice(item);
+  const price = discountedPrice(item.listPrice, item.discount);
   return (
     <button
       type="button"
